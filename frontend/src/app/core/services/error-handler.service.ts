@@ -10,9 +10,9 @@ export class ErrorHandlerService {
     let message = 'Something went wrong. Please try again later.';
 
     if (error.status === 0) {
-      message = 'Cannot connect to the server. Please check your connection.';
+      message = 'Cannot connect to the server. Please check your internet or backend connection.';
     } else if (error.status === 400) {
-      message = 'Invalid request. Please check the entered data.';
+      message = this.extractServerMessage(error) || 'Invalid request. Please check the entered data.';
     } else if (error.status === 401) {
       message = 'You need to log in first.';
     } else if (error.status === 403) {
@@ -24,5 +24,21 @@ export class ErrorHandlerService {
     }
 
     return throwError(() => new Error(message));
+  }
+
+  private extractServerMessage(error: HttpErrorResponse): string | null {
+    if (!error.error) {
+      return null;
+    }
+
+    if (typeof error.error === 'string') {
+      return error.error;
+    }
+
+    if (typeof error.error.detail === 'string') {
+      return error.error.detail;
+    }
+
+    return null;
   }
 }
