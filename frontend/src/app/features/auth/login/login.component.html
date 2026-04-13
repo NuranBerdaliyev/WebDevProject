@@ -4,7 +4,7 @@
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
         <label for="username">Username</label>
-        <input id="username" type="text" formControlName="username" />
+        <input id="username" type="text" formControlName="username" autocomplete="username" />
         @if (loginForm.controls.username.touched && loginForm.controls.username.invalid) {
           <small class="error-text">Username is required.</small>
         }
@@ -12,8 +12,7 @@
   
       <div class="form-group">
         <label for="password">Password</label>
-        <input id="password" type="password" formControlName="password" />
-        @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
+        <input id="password" type="password" formControlName="password" autocomplete="current-password" />        @if (loginForm.controls.password.touched && loginForm.controls.password.invalid) {
           <small class="error-text">Password is required.</small>
         }
       </div>
@@ -22,6 +21,12 @@
         <p class="error-message">{{ errorMessage }}</p>
       }
   
-      <button type="submit" [disabled]="authService.loading$ | async">Login</button>
+      <button type="submit" [disabled]="authService.loading$ | async">
+        @if (authService.loading$ | async) {
+          Loading...
+        } @else {
+          Login
+        }
+      </button>
     </form>
   </div>

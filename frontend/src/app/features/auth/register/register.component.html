@@ -29,6 +29,12 @@
         <p class="error-message">{{ errorMessage }}</p>
       }
   
-      <button type="submit" [disabled]="authService.loading$ | async">Register</button>
+      <button type="submit" [disabled]="authService.loading$ | async">
+        @if (authService.loading$ | async) {
+          Registering...
+        } @else {
+          Register
+        }
+      </button>
     </form>
   </div>
