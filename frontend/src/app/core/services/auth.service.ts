@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, tap, catchError } from 'rxjs';
+import { BehaviorSubject, Observable, tap, catchError, finalize } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 import { environment } from '../../../environments/environment';
@@ -19,13 +19,19 @@ export class AuthService {
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
   readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
+  private readonly loadingSubject = new BehaviorSubject<boolean>(false);
+  readonly loading$ = this.loadingSubject.asObservable();
+
   login(credentials: { username: string; password: string }): Observable<AuthResponse> {
+    this.loadingSubject.next(true);
+
     return this.http.post<AuthResponse>(`${this.apiUrl}/login/`, credentials).pipe(
       tap((response) => {
         localStorage.setItem(this.tokenKey, response.access);
         this.isAuthenticatedSubject.next(true);
       }),
-      catchError((error) => this.errorHandler.handleError(error))
+      catchError((error) => this.errorHandler.handleError(error)),
+      finalize(() => this.loadingSubject.next(false))
     );
   }
 
