@@ -48,6 +48,15 @@ export class AuthService {
     return this.hasToken();
   }
 
+  register(data: { username: string; email: string; password: string }): Observable<unknown> {
+    this.loadingSubject.next(true);
+  
+    return this.http.post(`${this.apiUrl}/register/`, data).pipe(
+      catchError((error) => this.errorHandler.handleError(error)),
+      finalize(() => this.loadingSubject.next(false))
+    );
+  }
+
   private hasToken(): boolean {
     return !!localStorage.getItem(this.tokenKey);
   }
