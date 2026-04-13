@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
+import { NotificationService } from '../../../core/services/notification.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -14,6 +15,7 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class RegisterComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly notificationService = inject(NotificationService);
   readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -30,19 +32,21 @@ export class RegisterComponent {
       this.registerForm.markAllAsTouched();
       return;
     }
-
+  
     const registerData = {
       username: this.registerForm.value.username ?? '',
       email: this.registerForm.value.email ?? '',
       password: this.registerForm.value.password ?? ''
     };
-
+  
     this.authService.register(registerData).subscribe({
       next: () => {
+        this.notificationService.success('Registration successful');
         this.router.navigateByUrl('/login');
       },
       error: (error: Error) => {
         this.errorMessage = error.message;
+        this.notificationService.error(error.message);
       }
     });
   }

@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificationService } from '../../../core/services/notification.service';
 
 @Component({
   selector: 'app-login',
@@ -15,6 +16,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   readonly authService = inject(AuthService);
+  private readonly notificationService = inject(NotificationService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -30,19 +32,21 @@ export class LoginComponent {
       this.loginForm.markAllAsTouched();
       return;
     }
-
+  
     const credentials = {
       username: this.loginForm.value.username ?? '',
       password: this.loginForm.value.password ?? ''
     };
-
+  
     this.authService.login(credentials).subscribe({
       next: () => {
+        this.notificationService.success('Login successful');
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/';
         this.router.navigateByUrl(returnUrl);
       },
       error: (error: Error) => {
         this.errorMessage = error.message;
+        this.notificationService.error(error.message);
       }
     });
   }
