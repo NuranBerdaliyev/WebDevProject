@@ -1,76 +1,73 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { BehaviorSubject, Observable, catchError, finalize, tap } from 'rxjs';
+
+import { ApiService } from './api.service';
+import { ErrorHandlerService } from './error-handler.service';
+
+export interface WatchlistMovie {
+  id: number;
+  title: string;
+  rating: number;
+  poster_url: string | null;
+  added_at: string;
+}
+
+export interface PaginatedWatchlistResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: WatchlistMovie[];
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class WatchlistService {
-  private readonly storageKey = 'watchlist_movie_ids';
+  private readonly api = inject(ApiService);
+  private readonly errorHandler = inject(ErrorHandlerService);
 
-  private readonly watchlistSubject = new BehaviorSubject<number[]>(this.getStoredWatchlist());
+  private readonly loadingSubject = new BehaviorSubject<boolean>(false);
+  readonly loading$ = this.loadingSubject.asObservable();
+
+  private readonly watchlistSubject = new BehaviorSubject<WatchlistMovie[]>([]);
   readonly watchlist$ = this.watchlistSubject.asObservable();
 
-  getWatchlist(): number[] {
-    return this.watchlistSubject.value;
+  getWatchlist(params?: {
+    sort?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Observable<PaginatedWatchlistResponse> {
+    this.loadingSubject.next(true);
+
+    return this.api
+      .get<PaginatedWatchlistResponse>('watchlist/', params)
+      .pipe(
+        tap((response) => this.watchlistSubject.next(response.results)),
+        catchError((error) => this.errorHandler.handleError(error)),
+        finalize(() => this.loadingSubject.next(false))
+      );
   }
 
-  addToWatchlist(movieId: number): void {
-    const current = this.watchlistSubject.value;
+  addToWatchlist(movieId: number): Observable<{ id: number; movie_id: number; added_at: string }> {
+    this.loadingSubject.next(true);
 
-    if (current.includes(movieId)) {
-      return;
-    }
-
-    const updated = [...current, movieId];
-    this.watchlistSubject.next(updated);
-    this.saveWatchlist(updated);
+    return this.api
+      .post<{ id: number; movie_id: number; added_at: string }>('watchlist/', { movie_id: movieId })
+      .pipe(
+        catchError((error) => this.errorHandler.handleError(error)),
+        finalize(() => this.loadingSubject.next(false))
+      );
   }
 
-  removeFromWatchlist(movieId: number): void {
-    const updated = this.watchlistSubject.value.filter((id) => id !== movieId);
-    this.watchlistSubject.next(updated);
-    this.saveWatchlist(updated);
-  }
+  removeFromWatchlist(movieId: number): Observable<void> {
+    this.loadingSubject.next(true);
 
-  isInWatchlist(movieId: number): boolean {
-    return this.watchlistSubject.value.includes(movieId);
-  }
-
-  toggleWatchlist(movieId: number): void {
-    if (this.isInWatchlist(movieId)) {
-      this.removeFromWatchlist(movieId);
-    } else {
-      this.addToWatchlist(movieId);
-    }
-  }
-
-  clearWatchlist(): void {
-    this.watchlistSubject.next([]);
-    localStorage.removeItem(this.storageKey);
-  }
-
-  private saveWatchlist(movieIds: number[]): void {
-    localStorage.setItem(this.storageKey, JSON.stringify(movieIds));
-  }
-
-  private getStoredWatchlist(): number[] {
-    const stored = localStorage.getItem(this.storageKey);
-
-    if (!stored) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(stored);
-
-      if (Array.isArray(parsed)) {
-        return parsed.filter((id) => typeof id === 'number');
-      }
-
-      return [];
-    } catch {
-      localStorage.removeItem(this.storageKey);
-      return [];
-    }
+    return this.api
+      .delete<void>(`watchlist/${movieId}/`)
+      .pipe(
+        catchError((error) => this.errorHandler.handleError(error)),
+        finalize(() => this.loadingSubject.next(false))
+      );
   }
 }
