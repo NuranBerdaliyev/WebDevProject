@@ -1,6 +1,4 @@
 
-
-```markdown name=API_CONTRACT.md url=https://github.com/NuranBerdaliyev/WebDevProject/blob/develop/API_CONTRACT.md
 # Movie Catalog System - API Contract
 
 **Версия:** 1.0  
