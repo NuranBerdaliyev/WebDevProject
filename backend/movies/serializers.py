@@ -13,7 +13,7 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)  # Показать username
+    user = serializers.StringRelatedField(read_only=True)  # Show username
     
     class Meta:
         model = Review
@@ -26,7 +26,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         return value
     
     def validate(self, data):
-        # Проверка на дублирование при создании
+        # Duplicate review check on create
         if self.instance is None:  # CREATE
             user = self.context['request'].user
             movie = data.get('movie')
@@ -37,9 +37,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         return data
     
     def to_representation(self, instance):
-        """Запрет смены movie при update"""
+        """Prevent changing movie on update."""
         data = super().to_representation(instance)
-        # Если это обновление (instance существует), movie read-only в ответе
         return data
 
 
@@ -47,7 +46,7 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
     movie_detail = MovieSerializer(source='movie', read_only=True)
     
     class Meta:
-        model = WatchlistItem  # Импортировать наверху: from .models import ..., WatchlistItem
+        model = WatchlistItem
         fields = ['id', 'movie', 'movie_detail', 'added_at']
         read_only_fields = ['user', 'added_at']
     

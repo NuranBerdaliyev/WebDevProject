@@ -104,23 +104,23 @@ class ReviewDetailTests(APITestCase):
         )
 
     def test_anonymous_cannot_create_review(self):
-        """POST /api/reviews/ без auth должен вернуть 401"""
+        """POST /api/reviews/ should return 401 for anonymous user."""
         response = self.client.post('/api/reviews/', {
             'movie': self.movie.id, 'rating': 8, 'text': 'Good'
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_cannot_create_duplicate_review(self):
-        """Один юзер не может оставить две рецензии на один фильм"""
+        """One user cannot leave two reviews for the same movie."""
         self.client.force_authenticate(user=self.user1)
 
-        # Первая рецензия — OK
+        # First review - OK
         response1 = self.client.post('/api/reviews/', {
             'movie': self.movie.id, 'rating': 8, 'text': 'Good'
         }, format='json')
         self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
 
-        # Вторая рецензия — 400
+        # Second review - 400
         response2 = self.client.post('/api/reviews/', {
             'movie': self.movie.id, 'rating': 9, 'text': 'Great'
         }, format='json')
@@ -128,7 +128,7 @@ class ReviewDetailTests(APITestCase):
         self.assertIn('detail', response2.data)
 
     def test_owner_can_update_review(self):
-        """Автор может редактировать свою рецензию"""
+        """Owner can update own review."""
         review = Review.objects.create(
             movie=self.movie, user=self.user1, rating=7, text='OK'
         )
@@ -140,20 +140,41 @@ class ReviewDetailTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['rating'], 8)
 
+    def test_anonymous_cannot_update_review(self):
+        """Non-owner cannot update another user's review."""
+        review = Review.objects.create(
+            movie=self.movie, user=self.user1, rating=7, text='OK'
+        )
+        response = self.client.put(f'/api/reviews/{review.id}/', {
+            'movie': self.movie.id,
+            'rating': 9,
+            'text': 'Changed'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_non_owner_cannot_update_review(self):
-        """Не-владелец не может редактировать чужую рецензию"""
         review = Review.objects.create(
             movie=self.movie, user=self.user1, rating=7, text='OK'
         )
         self.client.force_authenticate(user=self.user2)
 
-        response = self.client.put(f'/api/reviews/{review.id}/', {
-            'movie': self.movie.id, 'rating': 9, 'text': 'Hacked'
-        }, format='json')
+        response = self.client.put(
+            f'/api/reviews/{review.id}/',
+            {'movie': self.movie.id, 'rating': 9, 'text': 'Hacked'},
+            format='json'
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_anonymous_cannot_delete_review(self):
+        """Non-owner cannot delete another user's review."""
+        review = Review.objects.create(
+            movie=self.movie, user=self.user1, rating=7, text='OK'
+        )
+        response = self.client.delete(f'/api/reviews/{review.id}/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_owner_can_delete_review(self):
-        """Автор может удалить свою рецензию"""
+        """Owner can delete own review."""
         review = Review.objects.create(
             movie=self.movie, user=self.user1, rating=7, text='OK'
         )
@@ -163,8 +184,17 @@ class ReviewDetailTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Review.objects.filter(id=review.id).exists())
 
+    def test_non_owner_cannot_delete_review(self):
+        review = Review.objects.create(
+            movie=self.movie, user=self.user1, rating=7, text='OK'
+        )
+        self.client.force_authenticate(user=self.user2)
+
+        response = self.client.delete(f'/api/reviews/{review.id}/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_filter_reviews_by_movie(self):
-        """GET /api/reviews/?movie=X работает корректно"""
+        """GET /api/reviews/?movie=X works correctly."""
         movie2 = Movie.objects.create(
             title='Another', description='Desc',
             genre=self.genre, release_date='2024-02-01',
@@ -196,12 +226,12 @@ class WatchlistTests(APITestCase):
         )
 
     def test_anonymous_cannot_access_watchlist(self):
-        """GET /api/watchlist/ без auth должен вернуть 401"""
+        """GET /api/watchlist/ should return 401 for anonymous user."""
         response = self.client.get('/api/watchlist/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_create_watchlist_item(self):
-        """Авторизованный юзер может добавить фильм в watchlist"""
+        """Authenticated user can add a movie to watchlist."""
         self.client.force_authenticate(user=self.user1)
 
         response = self.client.post('/api/watchlist/', {
@@ -213,26 +243,26 @@ class WatchlistTests(APITestCase):
         ).exists())
 
     def test_cannot_duplicate_watchlist_item(self):
-        """Нельзя добавить один фильм дважды в watchlist"""
+        """Cannot add the same movie to watchlist twice."""
         self.client.force_authenticate(user=self.user1)
 
-        # Первое добавление — OK
+        # First addition — OK
         response1 = self.client.post('/api/watchlist/', {
             'movie': self.movie1.id
         }, format='json')
         self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
 
-        # Второе добавление — 400
+        # Second addition — 400
         response2 = self.client.post('/api/watchlist/', {
             'movie': self.movie1.id
         }, format='json')
         self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_list_returns_only_own_items(self):
-        """GET /api/watchlist/ возвращает только свои записи"""
+        """GET /api/watchlist/ returns only the current user's items."""
         WatchlistItem.objects.create(user=self.user1, movie=self.movie1)
         WatchlistItem.objects.create(user=self.user1, movie=self.movie2)
-        WatchlistItem.objects.create(user=self.user2, movie=self.movie1)  # Чужая
+        WatchlistItem.objects.create(user=self.user2, movie=self.movie1)  # Other user's item
 
         self.client.force_authenticate(user=self.user1)
         response = self.client.get('/api/watchlist/')
@@ -243,7 +273,7 @@ class WatchlistTests(APITestCase):
             self.assertIn(item['movie'], [self.movie1.id, self.movie2.id])
 
     def test_delete_watchlist_item(self):
-        """DELETE /api/watchlist/{movie_id}/ удаляет только свои записи"""
+        """DELETE /api/watchlist/{movie_id}/ removes only the current user's items."""
         item = WatchlistItem.objects.create(user=self.user1, movie=self.movie1)
         self.client.force_authenticate(user=self.user1)
 
@@ -252,9 +282,79 @@ class WatchlistTests(APITestCase):
         self.assertFalse(WatchlistItem.objects.filter(id=item.id).exists())
 
     def test_cannot_delete_others_watchlist_item(self):
-        """Не можешь удалить чужой watchlist item"""
+        """Cannot delete another user's watchlist item."""
         item = WatchlistItem.objects.create(user=self.user2, movie=self.movie1)
         self.client.force_authenticate(user=self.user1)
 
         response = self.client.delete(f'/api/watchlist/{item.id}/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_anonymous_cannot_create_watchlist_item(self):
+        response = self.client.post('/api/watchlist/', {
+            'movie': self.movie1.id
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_anonymous_cannot_delete_watchlist_item(self):
+        item = WatchlistItem.objects.create(user=self.user1, movie=self.movie1)
+        response = self.client.delete(f'/api/watchlist/{item.id}/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AdminPermissionsTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username='admin', password='pass12345', is_staff=True
+        )
+        self.user = User.objects.create_user(
+            username='user', password='pass12345'
+        )
+        self.genre = Genre.objects.create(name='Drama', description='Drama')
+        self.movie = Movie.objects.create(
+            title='Test Movie',
+            description='Desc',
+            genre=self.genre,
+            release_date='2024-01-01',
+            poster_url='https://example.com/poster.jpg',
+            rating=8.0
+        )
+
+    def test_non_admin_cannot_create_movie(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post('/api/movies/', {
+            'title': 'New Movie',
+            'description': 'Desc',
+            'genre': self.genre.id,
+            'release_date': '2024-02-01',
+            'poster_url': 'https://example.com/new.jpg',
+            'rating': 7.5
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_can_create_movie(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post('/api/movies/', {
+            'title': 'Admin Movie',
+            'description': 'Desc',
+            'genre': self.genre.id,
+            'release_date': '2024-02-01',
+            'poster_url': 'https://example.com/new.jpg',
+            'rating': 7.5
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_non_admin_cannot_create_genre(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post('/api/genres/', {
+            'name': 'Action',
+            'description': 'Action movies'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_admin_can_create_genre(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post('/api/genres/', {
+            'name': 'Action',
+            'description': 'Action movies'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
