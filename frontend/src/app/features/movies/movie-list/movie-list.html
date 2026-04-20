@@ -1,27 +1,47 @@
-<h2>Movies</h2>
-
-<div *ngIf="loading">Loading...</div>
-
-<div *ngIf="!loading && movies.length === 0">
-  No movies found
-</div>
-
-<div class="movies-grid">
-  <div *ngFor="let movie of movies" class="movie-card">
-
-    <img
-      *ngIf="movie.poster_url; else noPoster"
-      [src]="movie.poster_url"
-      [alt]="movie.title"
-      width="150"
-    />
-
-    <ng-template #noPoster>
-      <div>No poster</div>
-    </ng-template>
-
-    <h3>{{ movie.title }}</h3>
-    <p>Rating: {{ movie.rating }}</p>
-
+<div class="movie-list-page">
+    <h2>Movies</h2>
+  
+    @if (loading) {
+      <p class="status-text">Loading movies...</p>
+    }
+  
+    @if (!loading && errorMessage) {
+      <p class="error-text">{{ errorMessage }}</p>
+    }
+  
+    @if (!loading && !errorMessage && movies.length === 0) {
+      <p class="status-text">No movies found.</p>
+    }
+  
+    <div class="movies-grid">
+      @for (movie of movies; track movie.id) {
+        <div class="movie-card">
+          @if (movie.poster_url) {
+            <img
+              class="movie-poster"
+              [src]="movie.poster_url"
+              [alt]="movie.title"
+            />
+          } @else {
+            <div class="no-poster">No poster</div>
+          }
+  
+          <div class="movie-info">
+            <h3>{{ movie.title }}</h3>
+            <p><strong>Genre:</strong> {{ movie.genre.name }}</p>
+            <p><strong>Rating:</strong> {{ movie.rating }}</p>
+            <p><strong>Director:</strong> {{ movie.director }}</p>
+            <p><strong>Release:</strong> {{ movie.release_date }}</p>
+  
+            <div class="actions">
+              <button type="button" (click)="addToWatchlist(movie.id)">
+                Add to My List
+              </button>
+  
+              <a [routerLink]="['/reviews/add', movie.id]">Add Review</a>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
   </div>
-</div>
