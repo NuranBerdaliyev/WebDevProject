@@ -1,18 +1,16 @@
-import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, BehaviorSubject, finalize, of, tap } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { BehaviorSubject, Observable, catchError, finalize, of, tap } from 'rxjs';
 
-import { environment } from '../../../environments/environment';
-import { Movie } from '../models/movie.model';
+import { Movie, PaginatedResponse } from '../models/movie.model';
 import { ErrorHandlerService } from './error-handler.service';
+import { ApiService } from './api.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class MovieService {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(ApiService);
   private readonly errorHandler = inject(ErrorHandlerService);
-  private readonly apiUrl = `${environment.apiUrl}/movies`;
 
   private readonly loadingSubject = new BehaviorSubject<boolean>(false);
   readonly loading$ = this.loadingSubject.asObservable();
@@ -22,30 +20,50 @@ export class MovieService {
 
   private cacheLoaded = false;
 
-  getMovies(forceRefresh: boolean = false): Observable<Movie[]> {
-    if (this.cacheLoaded && !forceRefresh) {
-      return of(this.moviesSubject.value);
+  // 🔥 Главный метод
+  getMovies(
+    forceRefresh: boolean = false,
+    params?: {
+      search?: string;
+      genre?: string;
+      sort?: string;
+      page?: number;
+      limit?: number;
+    }
+  ): Observable<PaginatedResponse<Movie>> {
+
+    if (this.cacheLoaded && !forceRefresh && !params) {
+      return of({
+        count: this.moviesSubject.value.length,
+        next: null,
+        previous: null,
+        results: this.moviesSubject.value
+      });
     }
 
     this.loadingSubject.next(true);
 
-    return this.http
-      .get<Movie[]>(`${this.apiUrl}/`)
+    return this.api
+      .get<PaginatedResponse<Movie>>('movies/', params)
       .pipe(
-        tap((movies) => {
-          this.moviesSubject.next(movies);
-          this.cacheLoaded = true;
+        tap((response) => {
+          // сохраняем только если это обычный запрос без фильтров
+          if (!params) {
+            this.moviesSubject.next(response.results);
+            this.cacheLoaded = true;
+          }
         }),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );
   }
 
+  // 🔥 Детали фильма
   getMovieById(id: number): Observable<Movie> {
     this.loadingSubject.next(true);
 
-    return this.http
-      .get<Movie>(`${this.apiUrl}/${id}/`)
+    return this.api
+      .get<Movie>(`movies/${id}/`)
       .pipe(
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))

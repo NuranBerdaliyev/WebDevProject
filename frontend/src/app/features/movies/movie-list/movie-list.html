@@ -1,0 +1,27 @@
+<h2>Movies</h2>
+
+<div *ngIf="loading">Loading...</div>
+
+<div *ngIf="!loading && movies.length === 0">
+  No movies found
+</div>
+
+<div class="movies-grid">
+  <div *ngFor="let movie of movies" class="movie-card">
+
+    <img
+      *ngIf="movie.poster_url; else noPoster"
+      [src]="movie.poster_url"
+      [alt]="movie.title"
+      width="150"
+    />
+
+    <ng-template #noPoster>
+      <div>No poster</div>
+    </ng-template>
+
+    <h3>{{ movie.title }}</h3>
+    <p>Rating: {{ movie.rating }}</p>
+
+  </div>
+</div>
