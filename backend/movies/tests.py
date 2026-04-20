@@ -2,7 +2,7 @@ from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import Genre, Movie, Review
+from .models import Genre, Movie, Review, WatchlistItem
 
 
 class MovieApiTests(APITestCase):
@@ -90,3 +90,171 @@ class AuthApiTests(APITestCase):
             'refresh': refresh
         }, format='json')
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class ReviewDetailTests(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username='user1', password='pass')
+        self.user2 = User.objects.create_user(username='user2', password='pass')
+        self.genre = Genre.objects.create(name='Drama', description='Drama')
+        self.movie = Movie.objects.create(
+            title='Test Movie', description='Desc',
+            genre=self.genre, release_date='2024-01-01',
+            poster_url='https://test.jpg', rating=8.0
+        )
+
+    def test_anonymous_cannot_create_review(self):
+        """POST /api/reviews/ без auth должен вернуть 401"""
+        response = self.client.post('/api/reviews/', {
+            'movie': self.movie.id, 'rating': 8, 'text': 'Good'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_cannot_create_duplicate_review(self):
+        """Один юзер не может оставить две рецензии на один фильм"""
+        self.client.force_authenticate(user=self.user1)
+
+        # Первая рецензия — OK
+        response1 = self.client.post('/api/reviews/', {
+            'movie': self.movie.id, 'rating': 8, 'text': 'Good'
+        }, format='json')
+        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+
+        # Вторая рецензия — 400
+        response2 = self.client.post('/api/reviews/', {
+            'movie': self.movie.id, 'rating': 9, 'text': 'Great'
+        }, format='json')
+        self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('detail', response2.data)
+
+    def test_owner_can_update_review(self):
+        """Автор может редактировать свою рецензию"""
+        review = Review.objects.create(
+            movie=self.movie, user=self.user1, rating=7, text='OK'
+        )
+        self.client.force_authenticate(user=self.user1)
+
+        response = self.client.put(f'/api/reviews/{review.id}/', {
+            'movie': self.movie.id, 'rating': 8, 'text': 'Better'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['rating'], 8)
+
+    def test_non_owner_cannot_update_review(self):
+        """Не-владелец не может редактировать чужую рецензию"""
+        review = Review.objects.create(
+            movie=self.movie, user=self.user1, rating=7, text='OK'
+        )
+        self.client.force_authenticate(user=self.user2)
+
+        response = self.client.put(f'/api/reviews/{review.id}/', {
+            'movie': self.movie.id, 'rating': 9, 'text': 'Hacked'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_owner_can_delete_review(self):
+        """Автор может удалить свою рецензию"""
+        review = Review.objects.create(
+            movie=self.movie, user=self.user1, rating=7, text='OK'
+        )
+        self.client.force_authenticate(user=self.user1)
+
+        response = self.client.delete(f'/api/reviews/{review.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Review.objects.filter(id=review.id).exists())
+
+    def test_filter_reviews_by_movie(self):
+        """GET /api/reviews/?movie=X работает корректно"""
+        movie2 = Movie.objects.create(
+            title='Another', description='Desc',
+            genre=self.genre, release_date='2024-02-01',
+            poster_url='https://test2.jpg', rating=7.0
+        )
+        Review.objects.create(movie=self.movie, user=self.user1, rating=8, text='Good')
+        Review.objects.create(movie=movie2, user=self.user2, rating=7, text='OK')
+
+        response = self.client.get(f'/api/reviews/?movie={self.movie.id}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['movie'], self.movie.id)
+
+
+class WatchlistTests(APITestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username='user1', password='pass')
+        self.user2 = User.objects.create_user(username='user2', password='pass')
+        self.genre = Genre.objects.create(name='Drama', description='Drama')
+        self.movie1 = Movie.objects.create(
+            title='Movie 1', description='Desc',
+            genre=self.genre, release_date='2024-01-01',
+            poster_url='https://test1.jpg', rating=8.0
+        )
+        self.movie2 = Movie.objects.create(
+            title='Movie 2', description='Desc',
+            genre=self.genre, release_date='2024-02-01',
+            poster_url='https://test2.jpg', rating=7.0
+        )
+
+    def test_anonymous_cannot_access_watchlist(self):
+        """GET /api/watchlist/ без auth должен вернуть 401"""
+        response = self.client.get('/api/watchlist/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_create_watchlist_item(self):
+        """Авторизованный юзер может добавить фильм в watchlist"""
+        self.client.force_authenticate(user=self.user1)
+
+        response = self.client.post('/api/watchlist/', {
+            'movie': self.movie1.id
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(WatchlistItem.objects.filter(
+            user=self.user1, movie=self.movie1
+        ).exists())
+
+    def test_cannot_duplicate_watchlist_item(self):
+        """Нельзя добавить один фильм дважды в watchlist"""
+        self.client.force_authenticate(user=self.user1)
+
+        # Первое добавление — OK
+        response1 = self.client.post('/api/watchlist/', {
+            'movie': self.movie1.id
+        }, format='json')
+        self.assertEqual(response1.status_code, status.HTTP_201_CREATED)
+
+        # Второе добавление — 400
+        response2 = self.client.post('/api/watchlist/', {
+            'movie': self.movie1.id
+        }, format='json')
+        self.assertEqual(response2.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_list_returns_only_own_items(self):
+        """GET /api/watchlist/ возвращает только свои записи"""
+        WatchlistItem.objects.create(user=self.user1, movie=self.movie1)
+        WatchlistItem.objects.create(user=self.user1, movie=self.movie2)
+        WatchlistItem.objects.create(user=self.user2, movie=self.movie1)  # Чужая
+
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get('/api/watchlist/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        for item in response.data:
+            self.assertIn(item['movie'], [self.movie1.id, self.movie2.id])
+
+    def test_delete_watchlist_item(self):
+        """DELETE /api/watchlist/{movie_id}/ удаляет только свои записи"""
+        item = WatchlistItem.objects.create(user=self.user1, movie=self.movie1)
+        self.client.force_authenticate(user=self.user1)
+
+        response = self.client.delete(f'/api/watchlist/{item.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(WatchlistItem.objects.filter(id=item.id).exists())
+
+    def test_cannot_delete_others_watchlist_item(self):
+        """Не можешь удалить чужой watchlist item"""
+        item = WatchlistItem.objects.create(user=self.user2, movie=self.movie1)
+        self.client.force_authenticate(user=self.user1)
+
+        response = self.client.delete(f'/api/watchlist/{item.id}/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
