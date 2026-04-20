@@ -1,5 +1,6 @@
 export interface Genre {
-    id: number;
-    name: string;
-    description: string;
-  }
+  id: number;
+  name: string;
+  slug: string;
+  movies_count: number;
+}
