@@ -23,9 +23,7 @@ export const routes: Routes = [
     component: ProtectedTestComponent,
     canActivate: [authGuard]
   },
-  { path: 'movies', component: MovieListComponent },
   {
-
     path: '',
     redirectTo: 'login',
     pathMatch: 'full'
