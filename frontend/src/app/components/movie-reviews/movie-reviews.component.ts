@@ -486,8 +486,8 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
         this.reviews = reviews;
         this.loading = false;
       },
-      error: (err) => {
-        this.error = err.message || 'Failed to load reviews';
+      error: (err: any) => {
+        this.error = err?.message || 'Failed to load reviews';
         this.loading = false;
       }
     });
@@ -507,8 +507,8 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
         this.reviews.unshift(review);
         this.cancelAdd();
       },
-      error: (err) => {
-        this.error = err.message || 'Failed to submit review';
+      error: (err: any) => {
+        this.error = err?.message || 'Failed to submit review';
       }
     });
   }
@@ -541,8 +541,8 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
         }
         this.cancelEdit();
       },
-      error: (err) => {
-        this.error = err.message || 'Failed to update review';
+      error: (err: any) => {
+        this.error = err?.message || 'Failed to update review';
       }
     });
   }
@@ -571,8 +571,8 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
       next: () => {
         this.reviews = this.reviews.filter(r => r.id !== id);
       },
-      error: (err) => {
-        this.error = err.message || 'Failed to delete review';
+      error: (err: any) => {
+        this.error = err?.message || 'Failed to delete review';
       }
     });
   }

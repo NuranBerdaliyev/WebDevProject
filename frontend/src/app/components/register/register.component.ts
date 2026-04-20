@@ -322,11 +322,15 @@ export class RegisterComponent {
     this.errorMessage = null;
     this.successMessage = null;
 
-    this.authService.register({
+    const userData: any = {
       username: this.username.trim(),
-      password: this.password,
-      email: this.email.trim() || undefined
-    }).subscribe({
+      password: this.password
+    };
+    if (this.email.trim()) {
+      userData.email = this.email.trim();
+    }
+
+    this.authService.register(userData).subscribe({
       next: () => {
         this.loading = false;
         this.successMessage = 'Account created successfully! Redirecting to login...';
@@ -334,9 +338,9 @@ export class RegisterComponent {
           this.registerSuccess.emit();
         }, 1500);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.loading = false;
-        this.errorMessage = err.message || 'Registration failed. Please try again.';
+        this.errorMessage = err?.message || 'Registration failed. Please try again.';
       }
     });
   }

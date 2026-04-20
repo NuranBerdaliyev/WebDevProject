@@ -5,4 +5,8 @@ export interface Review {
     rating: number;
     text: string;
     created_at: string;
+    // Optional fields from backend
+    username?: string;
+    user_name?: string;
+    stars?: number;
   }
