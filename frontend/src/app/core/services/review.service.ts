@@ -39,7 +39,7 @@ export class ReviewService {
       );
   }
 
-  createReview(reviewData: Omit<Review, 'id' | 'created_at'>): Observable<Review> {
+  createReview(reviewData: { movie: number; rating: number; text: string }): Observable<Review> {
     this.loadingSubject.next(true);
 
     return this.http
@@ -55,6 +55,28 @@ export class ReviewService {
 
     return this.http
       .delete<void>(`${this.apiUrl}/${id}/`)
+      .pipe(
+        catchError((error) => this.errorHandler.handleError(error)),
+        finalize(() => this.loadingSubject.next(false))
+      );
+  }
+
+  getReviewsByMovie(movieId: number): Observable<Review[]> {
+    this.loadingSubject.next(true);
+
+    return this.http
+      .get<Review[]>(`${environment.apiUrl}/movies/${movieId}/reviews/`)
+      .pipe(
+        catchError((error) => this.errorHandler.handleError(error)),
+        finalize(() => this.loadingSubject.next(false))
+      );
+  }
+
+  updateReview(id: number, reviewData: Partial<Review>): Observable<Review> {
+    this.loadingSubject.next(true);
+
+    return this.http
+      .put<Review>(`${this.apiUrl}/${id}/`, reviewData)
       .pipe(
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))

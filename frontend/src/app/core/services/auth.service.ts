@@ -35,6 +35,19 @@ export class AuthService {
     );
   }
 
+  register(userData: { username: string; email?: string; password: string; first_name?: string; last_name?: string }): Observable<AuthResponse> {
+    this.loadingSubject.next(true);
+
+    return this.http.post<AuthResponse>(`${this.apiUrl}/register/`, userData).pipe(
+      tap((response) => {
+        localStorage.setItem(this.tokenKey, response.access);
+        this.isAuthenticatedSubject.next(true);
+      }),
+      catchError((error) => this.errorHandler.handleError(error)),
+      finalize(() => this.loadingSubject.next(false))
+    );
+  }
+
   logout(): void {
     localStorage.removeItem(this.tokenKey);
     this.isAuthenticatedSubject.next(false);
