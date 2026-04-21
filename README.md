@@ -31,37 +31,14 @@ Built with Angular (frontend) and Django REST Framework (backend).
 - User
 
 ## API Endpoints
-
-### Authentication
-- `POST /api/login/` 
-- `POST /api/token/refresh/`
-- `POST /api/logout/`
-
-### Movies
-- `GET /api/movies/`(?genre=, ?search=, ?sort=)
-- `POST /api/movies/` (only admin)
-- `GET /api/movies/{id}/`
-- `PUT /api/movies/{id}/`(only admin)
-- `DELETE /api/movies/{id}/`(only admin)
-
-### Genres
-- `GET /api/genres/`
-- `GET /api/genres/{id}/`
-
-### Reviews
-- `GET /api/reviews/`(?movie=, sort=-created_at)
-- `POST /api/reviews/`(auth required)
-- `GET /api/reviews/{id}/`
-- `PUT /api/reviews/{id}/`(only owner)
-- `DELETE /api/reviews/{id}/` (only owner)
-
-### Watchlist
-- `GET /api/watchlist/`(auth required)
-- `POST /api/watchlist/`(auth required)
-- `DELETE /api/watchlist/{id}/`(auth required)
-
-### Documentation
-- `GET /api/docs/` — Swagger UI
-- `GET /api/redoc/` — ReDoc
-- `GET /api/schema/` — OpenAPI schema
+- POST /api/login/
+- POST /api/token/refresh/
+- POST /api/logout/   (body: {"refresh": "<refresh_token>"})
+- GET /api/movies/
+- POST /api/movies/
+- GET /api/movies/{id}/
+- PUT /api/movies/{id}/
+- DELETE /api/movies/{id}/
+- GET /api/docs/      (Swagger UI)
+- GET /api/schema/    (OpenAPI schema)
 
