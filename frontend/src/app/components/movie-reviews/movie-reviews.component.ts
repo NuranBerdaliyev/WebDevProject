@@ -91,9 +91,9 @@ interface ReviewFormData {
           <div *ngIf="editingReview?.id !== review.id" class="review-content">
             <div class="review-header">
               <div class="review-user">
-                <span class="username">{{ review.username || 'Anonymous' }}</span>
+                <span class="username">{{ review.user.username || 'Anonymous' }}</span>
                 <div class="review-rating">
-                  <span *ngFor="let star of [1,2,3,4,5]" class="star" [class.filled]="(review.stars || getStars(review.rating)) >= star">
+                  <span *ngFor="let star of [1,2,3,4,5]" class="star" [class.filled]="getStars(review.rating) >= star">
                     ★
                   </span>
                 </div>
@@ -481,9 +481,9 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    this.reviewService.getReviewsByMovie(this.movieId).subscribe({
-      next: (reviews) => {
-        this.reviews = reviews;
+    this.reviewService.getReviews(this.movieId).subscribe({
+      next: (response: any) => {
+        this.reviews = response.results || response;
         this.loading = false;
       },
       error: (err: any) => {
@@ -497,12 +497,12 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
     if (!this.newReview.text.trim() || this.newReview.rating === 0) return;
 
     const reviewData = {
-      movie: this.movieId,
-      rating: this.newReview.rating,  // 1-5 звезд
+      rating: this.newReview.rating,
+      title: 'User Review',
       text: this.newReview.text.trim()
     };
 
-    this.reviewService.createReview(reviewData).subscribe({
+    this.reviewService.createReview(this.movieId, reviewData).subscribe({
       next: (review) => {
         this.reviews.unshift(review);
         this.cancelAdd();
@@ -522,7 +522,7 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
     this.editingReview = review;
     // Конвертируем backend rating (1-10) в stars (1-5)
     this.editData = {
-      rating: review.stars || this.getStars(review.rating),
+      rating: Math.round(review.rating / 2), // Convert 1-10 to 1-5
       text: review.text
     };
   }
@@ -530,8 +530,9 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
   saveEdit(): void {
     if (!this.editingReview || !this.editData.text?.trim()) return;
 
-    this.reviewService.updateReview(this.editingReview.id, {
+    this.reviewService.updateReview(this.movieId, this.editingReview.id, {
       rating: this.editData.rating,
+      title: this.editingReview.title,
       text: this.editData.text
     }).subscribe({
       next: (updated) => {
@@ -567,7 +568,7 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
   deleteReview(id: number): void {
     if (!confirm('Are you sure you want to delete this review?')) return;
 
-    this.reviewService.deleteReview(id).subscribe({
+    this.reviewService.deleteReview(this.movieId, id).subscribe({
       next: () => {
         this.reviews = this.reviews.filter(r => r.id !== id);
       },
@@ -583,7 +584,7 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
   canEditReview(review: Review): boolean {
     // Только автор отзыва может редактировать
     if (!this.isAuthenticated || !this.currentUserId) return false;
-    return review.user === this.currentUserId;
+    return review.user.id === this.currentUserId;
   }
 
   /**
