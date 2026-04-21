@@ -58,7 +58,7 @@ export class MovieService {
       );
   }
 
-  // 🔥 Детали фильма
+ 
   getMovieById(id: number): Observable<Movie> {
     this.loadingSubject.next(true);
 
