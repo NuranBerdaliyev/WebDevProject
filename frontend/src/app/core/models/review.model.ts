@@ -15,6 +15,9 @@ export interface Review {
   user_helpful: boolean;
   created_at: string;
   updated_at: string;
+
+  username?: string;
+  stars?: number;
 }
 
 export interface CreateReviewData {

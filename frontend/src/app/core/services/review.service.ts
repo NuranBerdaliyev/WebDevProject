@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, finalize } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, finalize, map } from 'rxjs';
 
 import { Review, CreateReviewData } from '../models/review.model';
 import { PaginatedResponse } from '../models/movie.model';
@@ -16,6 +16,14 @@ export class ReviewService {
   private readonly loadingSubject = new BehaviorSubject<boolean>(false);
   readonly loading$ = this.loadingSubject.asObservable();
 
+  private normalizeReview(review: Review): Review {
+    return {
+      ...review,
+      username: review.user?.username,
+      stars: review.rating
+    };
+  }
+
   getReviews(
     movieId: number,
     params?: {
@@ -29,9 +37,20 @@ export class ReviewService {
     return this.api
       .get<PaginatedResponse<Review>>(`movies/${movieId}/reviews/`, params)
       .pipe(
+        map((response) => ({
+          ...response,
+          results: response.results.map((review) => this.normalizeReview(review))
+        })),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );
+  }
+
+  // совместимость со старым movie-reviews.component.ts
+  getReviewsByMovie(movieId: number): Observable<Review[]> {
+    return this.getReviews(movieId).pipe(
+      map((response) => response.results)
+    );
   }
 
   createReview(movieId: number, reviewData: CreateReviewData): Observable<Review> {
@@ -40,6 +59,7 @@ export class ReviewService {
     return this.api
       .post<Review>(`movies/${movieId}/reviews/`, reviewData)
       .pipe(
+        map((review) => this.normalizeReview(review)),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );
@@ -51,6 +71,7 @@ export class ReviewService {
     return this.api
       .put<Review>(`movies/${movieId}/reviews/${reviewId}/`, reviewData)
       .pipe(
+        map((review) => this.normalizeReview(review)),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );
