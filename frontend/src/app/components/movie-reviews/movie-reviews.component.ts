@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 import { ReviewService } from '../../core/services/review.service';
 import { Review } from '../../core/models/review.model';
@@ -9,8 +9,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 
 interface ReviewFormData {
-  movie: number;
-  rating: number;
+  rating: number;   // 1-10
+  title: string;
   text: string;
 }
 
@@ -22,19 +22,16 @@ interface ReviewFormData {
     <div class="reviews-container">
       <h3 class="reviews-title">Reviews</h3>
 
-      <!-- Loading State -->
       <div *ngIf="loading" class="loading-state">
         <span class="spinner"></span>
         <span>Loading reviews...</span>
       </div>
 
-      <!-- Error State -->
       <div *ngIf="error" class="error-state">
         <p>{{ error }}</p>
         <button (click)="loadReviews()" class="btn-retry">Retry</button>
       </div>
 
-      <!-- Add Review Form -->
       <div *ngIf="isAuthenticated && !loading && !error" class="add-review-section">
         <div *ngIf="!showAddForm">
           <button (click)="showAddForm = true" class="btn-add-review">Write a Review</button>
@@ -42,32 +39,46 @@ interface ReviewFormData {
 
         <div *ngIf="showAddForm" class="review-form">
           <h4>Add Review</h4>
+
           <div class="form-group">
-            <label>Rating:</label>
-            <div class="rating-input">
-              <button
-                *ngFor="let star of [1,2,3,4,5]"
-                (click)="newReview.rating = star"
-                [class.active]="newReview.rating >= star"
-                class="star-btn"
-              >
-                ★
-              </button>
-            </div>
-            <span class="rating-value">{{ newReview.rating }}/5</span>
+            <label>Rating (1-10):</label>
+            <input
+              type="number"
+              [(ngModel)]="newReview.rating"
+              min="1"
+              max="10"
+            />
+            <span class="rating-value">{{ newReview.rating }}/10</span>
           </div>
+
+          <div class="form-group">
+            <label>Title:</label>
+            <input
+              type="text"
+              [(ngModel)]="newReview.title"
+              maxlength="200"
+              placeholder="Review title"
+            />
+            <span class="char-count">{{ newReview.title.length }}/200</span>
+          </div>
+
           <div class="form-group">
             <label>Your Review:</label>
             <textarea
               [(ngModel)]="newReview.text"
               rows="4"
               placeholder="Write your review here..."
-              maxlength="1000"
+              maxlength="5000"
             ></textarea>
-            <span class="char-count">{{ newReview.text.length }}/1000</span>
+            <span class="char-count">{{ newReview.text.length }}/5000</span>
           </div>
+
           <div class="form-actions">
-            <button (click)="submitReview()" [disabled]="!newReview.text.trim() || newReview.rating === 0" class="btn-submit">
+            <button
+              (click)="submitReview()"
+              [disabled]="!canSubmitReview()"
+              class="btn-submit"
+            >
               Submit
             </button>
             <button (click)="cancelAdd()" class="btn-cancel">Cancel</button>
@@ -75,58 +86,70 @@ interface ReviewFormData {
         </div>
       </div>
 
-      <!-- Login Prompt -->
       <div *ngIf="!isAuthenticated && !loading" class="login-prompt">
         <p>Please log in to write a review</p>
       </div>
 
-      <!-- Reviews List -->
       <div *ngIf="!loading && !error" class="reviews-list">
         <div *ngIf="reviews.length === 0" class="no-reviews">
           No reviews yet. Be the first to write one!
         </div>
 
         <div *ngFor="let review of reviews" class="review-item">
-          <!-- View Mode -->
           <div *ngIf="editingReview?.id !== review.id" class="review-content">
             <div class="review-header">
               <div class="review-user">
-                <span class="username">{{ review.user.username || 'Anonymous' }}</span>
+                <span class="username">{{ review.user?.username || 'Anonymous' }}</span>
+
                 <div class="review-rating">
-                  <span *ngFor="let star of [1,2,3,4,5]" class="star" [class.filled]="getStars(review.rating) >= star">
-                    ★
-                  </span>
+                  <span class="rating-badge">{{ review.rating }}/10</span>
                 </div>
               </div>
+
               <span class="review-date">{{ formatDate(review.created_at) }}</span>
             </div>
+
+            <h4 class="review-title">{{ review.title }}</h4>
             <p class="review-text">{{ review.text }}</p>
+
             <div class="review-actions" *ngIf="canEditReview(review)">
               <button (click)="startEdit(review)" class="btn-edit">Edit</button>
               <button (click)="deleteReview(review.id)" class="btn-delete">Delete</button>
             </div>
           </div>
 
-          <!-- Edit Mode -->
           <div *ngIf="editingReview?.id === review.id" class="review-edit">
             <div class="form-group">
-              <label>Rating:</label>
-              <div class="rating-input">
-                <button
-                  *ngFor="let star of [1,2,3,4,5]"
-                  (click)="setEditRating(star)"
-                  [class.active]="getEditRating() >= star"
-                  class="star-btn"
-                >
-                  ★
-                </button>
-              </div>
+              <label>Rating (1-10):</label>
+              <input
+                type="number"
+                [(ngModel)]="editData.rating"
+                min="1"
+                max="10"
+              />
             </div>
+
             <div class="form-group">
-              <textarea [(ngModel)]="editData!.text" rows="3" maxlength="1000"></textarea>
+              <label>Title:</label>
+              <input
+                type="text"
+                [(ngModel)]="editData.title"
+                maxlength="200"
+              />
             </div>
+
+            <div class="form-group">
+              <textarea
+                [(ngModel)]="editData.text"
+                rows="4"
+                maxlength="5000"
+              ></textarea>
+            </div>
+
             <div class="form-actions">
-              <button (click)="saveEdit()" [disabled]="!canSaveEdit()" class="btn-submit">Save</button>
+              <button (click)="saveEdit()" [disabled]="!canSaveEdit()" class="btn-submit">
+                Save
+              </button>
               <button (click)="cancelEdit()" class="btn-cancel">Cancel</button>
             </div>
           </div>
@@ -136,83 +159,44 @@ interface ReviewFormData {
   `,
   styles: [`
     .reviews-container {
+      margin-top: 30px;
       color: white;
     }
 
     .reviews-title {
-      font-size: 1.5rem;
+      font-size: 24px;
       margin-bottom: 20px;
-      color: #e5e5e5;
     }
 
-    /* Loading State */
-    .loading-state {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 20px;
-      color: #a3a3a3;
-    }
-
-    .spinner {
-      width: 20px;
-      height: 20px;
-      border: 2px solid #333;
-      border-top-color: #e50914;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* Error State */
-    .error-state {
+    .loading-state, .error-state, .login-prompt, .no-reviews {
       padding: 20px;
       text-align: center;
-      color: #e87c03;
+      color: #b3b3b3;
     }
 
-    .btn-retry {
-      margin-top: 10px;
-      padding: 8px 16px;
-      background: #e50914;
-      border: none;
-      border-radius: 4px;
-      color: white;
-      cursor: pointer;
-    }
-
-    /* Add Review Section */
-    .add-review-section {
-      margin-bottom: 30px;
-    }
-
-    .btn-add-review {
+    .btn-retry, .btn-add-review, .btn-submit, .btn-cancel {
       padding: 10px 20px;
-      background: #e50914;
       border: none;
       border-radius: 4px;
-      color: white;
-      font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      margin: 5px;
     }
 
-    .btn-add-review:hover {
-      background: #f40612;
+    .btn-add-review, .btn-submit {
+      background: #e50914;
+      color: white;
     }
 
-    .review-form {
-      background: #262626;
+    .btn-cancel, .btn-retry {
+      background: #333;
+      color: white;
+    }
+
+    .review-form, .review-item {
+      background: #1f1f1f;
       padding: 20px;
       border-radius: 8px;
-    }
-
-    .review-form h4 {
       margin-bottom: 15px;
-      color: #e5e5e5;
     }
 
     .form-group {
@@ -221,123 +205,30 @@ interface ReviewFormData {
 
     .form-group label {
       display: block;
-      margin-bottom: 8px;
-      color: #a3a3a3;
-    }
-
-    .rating-input {
-      display: flex;
-      gap: 5px;
-    }
-
-    .star-btn {
-      background: none;
-      border: none;
-      color: #333;
-      font-size: 24px;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-
-    .star-btn.active {
-      color: #ffd700;
-    }
-
-    .rating-value {
-      margin-left: 10px;
+      margin-bottom: 5px;
       color: #e5e5e5;
-      font-weight: 600;
     }
 
-    textarea {
+    input, textarea {
       width: 100%;
       padding: 10px;
-      background: #333;
       border: 1px solid #444;
       border-radius: 4px;
+      background: #2a2a2a;
       color: white;
-      resize: vertical;
-      font-family: inherit;
+      box-sizing: border-box;
     }
 
-    textarea:focus {
-      outline: none;
-      border-color: #e50914;
-    }
-
-    .char-count {
-      display: block;
-      text-align: right;
-      color: #666;
+    .char-count, .rating-value {
       font-size: 12px;
+      color: #888;
+      display: block;
       margin-top: 5px;
     }
 
     .form-actions {
       display: flex;
       gap: 10px;
-    }
-
-    .btn-submit, .btn-cancel {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .btn-submit {
-      background: #e50914;
-      color: white;
-    }
-
-    .btn-submit:hover:not(:disabled) {
-      background: #f40612;
-    }
-
-    .btn-submit:disabled {
-      background: #666;
-      cursor: not-allowed;
-    }
-
-    .btn-cancel {
-      background: #444;
-      color: white;
-    }
-
-    .btn-cancel:hover {
-      background: #555;
-    }
-
-    /* Login Prompt */
-    .login-prompt {
-      padding: 20px;
-      text-align: center;
-      color: #a3a3a3;
-      background: #262626;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-
-    /* Reviews List */
-    .reviews-list {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .no-reviews {
-      padding: 30px;
-      text-align: center;
-      color: #a3a3a3;
-      background: #262626;
-      border-radius: 8px;
-    }
-
-    .review-item {
-      background: #262626;
-      padding: 20px;
-      border-radius: 8px;
     }
 
     .review-header {
@@ -358,18 +249,14 @@ interface ReviewFormData {
       color: #e5e5e5;
     }
 
-    .review-rating {
-      display: flex;
-      gap: 2px;
+    .review-title {
+      margin: 8px 0;
+      color: #fff;
     }
 
-    .star {
-      color: #333;
-      font-size: 18px;
-    }
-
-    .star.filled {
+    .rating-badge {
       color: #ffd700;
+      font-weight: 600;
     }
 
     .review-date {
@@ -436,14 +323,15 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
   currentUserId: number | null = null;
 
   newReview: ReviewFormData = {
-    movie: 0,
-    rating: 0,
+    rating: 1,
+    title: '',
     text: ''
   };
 
   editingReview: Review | null = null;
-  editData: { rating: number; text: string } = {
-    rating: 0,
+  editData: { rating: number; title: string; text: string } = {
+    rating: 1,
+    title: '',
     text: ''
   };
 
@@ -452,20 +340,16 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.isAuthenticated = this.authService.isAuthenticated();
 
-    // Subscribe to auth changes
-    const authSub = this.authService.isAuthenticated$.subscribe(
-      auth => {
-        this.isAuthenticated = auth;
-        if (auth) {
-          this.loadCurrentUser();
-        }
+    const authSub = this.authService.isAuthenticated$.subscribe(auth => {
+      this.isAuthenticated = auth;
+      if (auth) {
+        this.loadCurrentUser();
       }
-    );
-    this.subscriptions.push(authSub);
+    });
 
+    this.subscriptions.push(authSub);
     this.loadReviews();
   }
-
   ngOnDestroy(): void {
     this.subscriptions.forEach(s => s.unsubscribe());
   }
@@ -481,9 +365,9 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    this.reviewService.getReviews(this.movieId).subscribe({
-      next: (response: any) => {
-        this.reviews = response.results || response;
+    this.reviewService.getReviewsByMovie(this.movieId).subscribe({
+      next: (reviews) => {
+        this.reviews = reviews;
         this.loading = false;
       },
       error: (err: any) => {
@@ -493,12 +377,21 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
     });
   }
 
+  canSubmitReview(): boolean {
+    return !!(
+      this.newReview.title.trim() &&
+      this.newReview.text.trim() &&
+      this.newReview.rating >= 1 &&
+      this.newReview.rating <= 10
+    );
+  }
+
   submitReview(): void {
-    if (!this.newReview.text.trim() || this.newReview.rating === 0) return;
+    if (!this.canSubmitReview()) return;
 
     const reviewData = {
       rating: this.newReview.rating,
-      title: 'User Review',
+      title: this.newReview.title.trim(),
       text: this.newReview.text.trim()
     };
 
@@ -515,25 +408,25 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
 
   cancelAdd(): void {
     this.showAddForm = false;
-    this.newReview = { movie: 0, rating: 0, text: '' };
+    this.newReview = { rating: 1, title: '', text: '' };
   }
 
   startEdit(review: Review): void {
     this.editingReview = review;
-    // Конвертируем backend rating (1-10) в stars (1-5)
     this.editData = {
-      rating: Math.round(review.rating / 2), // Convert 1-10 to 1-5
+      rating: review.rating,
+      title: review.title,
       text: review.text
     };
   }
 
   saveEdit(): void {
-    if (!this.editingReview || !this.editData.text?.trim()) return;
+    if (!this.editingReview || !this.canSaveEdit()) return;
 
     this.reviewService.updateReview(this.movieId, this.editingReview.id, {
       rating: this.editData.rating,
-      title: this.editingReview.title,
-      text: this.editData.text
+      title: this.editData.title.trim(),
+      text: this.editData.text.trim()
     }).subscribe({
       next: (updated) => {
         const index = this.reviews.findIndex(r => r.id === updated.id);
@@ -550,19 +443,16 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
 
   cancelEdit(): void {
     this.editingReview = null;
-    this.editData = { rating: 0, text: '' };
-  }
-
-  setEditRating(rating: number): void {
-    this.editData.rating = rating;
-  }
-
-  getEditRating(): number {
-    return this.editData?.rating || 0;
+    this.editData = { rating: 1, title: '', text: '' };
   }
 
   canSaveEdit(): boolean {
-    return !!(this.editData?.text?.trim());
+    return !!(
+      this.editData.title.trim() &&
+      this.editData.text.trim() &&
+      this.editData.rating >= 1 &&
+      this.editData.rating <= 10
+    );
   }
 
   deleteReview(id: number): void {
@@ -578,20 +468,9 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Проверка: может ли текущий пользователь редактировать отзыв
-   */
   canEditReview(review: Review): boolean {
-    // Только автор отзыва может редактировать
     if (!this.isAuthenticated || !this.currentUserId) return false;
-    return review.user.id === this.currentUserId;
-  }
-
-  /**
-   * Конвертировать backend rating (1-10) в звезды (1-5)
-   */
-  getStars(rating: number): number {
-    return Math.min(5, Math.max(1, Math.round(rating / 2)));
+    return review.user?.id === this.currentUserId;
   }
 
   formatDate(dateString: string): string {
