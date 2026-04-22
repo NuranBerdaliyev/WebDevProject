@@ -365,9 +365,9 @@ export class MovieReviewsComponent implements OnInit, OnDestroy {
     this.loading = true;
     this.error = null;
 
-    this.reviewService.getReviewsByMovie(this.movieId).subscribe({
-      next: (reviews) => {
-        this.reviews = reviews;
+    this.reviewService.getReviews(this.movieId).subscribe({
+      next: (response: any) => {
+        this.reviews = response.results || response;
         this.loading = false;
       },
       error: (err: any) => {
