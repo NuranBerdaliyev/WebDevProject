@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable, catchError, finalize } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, finalize, map } from 'rxjs';
 
 import { Review, CreateReviewData } from '../models/review.model';
 import { PaginatedResponse } from '../models/movie.model';
@@ -16,6 +16,18 @@ export class ReviewService {
   private readonly loadingSubject = new BehaviorSubject<boolean>(false);
   readonly loading$ = this.loadingSubject.asObservable();
 
+  private normalizeReview(review: any): Review {
+    return {
+      ...review,
+      movie_id: review.movie_id ?? review.movie,
+      title: review.title ?? '',
+      helpful_count: review.helpful_count ?? 0,
+      user_helpful: review.user_helpful ?? false,
+      username: typeof review.user === 'string' ? review.user : review.user?.username,
+      stars: review.rating
+    } as Review;
+  }
+
   getReviews(
     movieId: number,
     params?: {
@@ -27,19 +39,46 @@ export class ReviewService {
     this.loadingSubject.next(true);
 
     return this.api
-      .get<PaginatedResponse<Review>>(`movies/${movieId}/reviews/`, params)
+      .get<any>('reviews/', { movie: movieId, ...(params ?? {}) })
       .pipe(
+        map((response) => {
+          if (Array.isArray(response)) {
+            const results = response.map((review) => this.normalizeReview(review));
+            return {
+              count: results.length,
+              next: null,
+              previous: null,
+              results
+            } as PaginatedResponse<Review>;
+          }
+
+          return {
+            ...response,
+            results: (response.results ?? []).map((review: any) => this.normalizeReview(review))
+          } as PaginatedResponse<Review>;
+        }),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );
   }
 
+  getReviewsByMovie(movieId: number): Observable<Review[]> {
+    return this.getReviews(movieId).pipe(map((response) => response.results));
+  }
+
   createReview(movieId: number, reviewData: CreateReviewData): Observable<Review> {
     this.loadingSubject.next(true);
 
+    const payload = {
+      movie: movieId,
+      rating: reviewData.rating,
+      text: reviewData.text ?? ''
+    };
+
     return this.api
-      .post<Review>(`movies/${movieId}/reviews/`, reviewData)
+      .post<any>('reviews/', payload)
       .pipe(
+        map((review) => this.normalizeReview(review)),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );
@@ -48,19 +87,26 @@ export class ReviewService {
   updateReview(movieId: number, reviewId: number, reviewData: CreateReviewData): Observable<Review> {
     this.loadingSubject.next(true);
 
+    const payload = {
+      movie: movieId,
+      rating: reviewData.rating,
+      text: reviewData.text ?? ''
+    };
+
     return this.api
-      .put<Review>(`movies/${movieId}/reviews/${reviewId}/`, reviewData)
+      .put<any>(`reviews/${reviewId}/`, payload)
       .pipe(
+        map((review) => this.normalizeReview(review)),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );
   }
 
-  deleteReview(movieId: number, reviewId: number): Observable<void> {
+  deleteReview(_movieId: number, reviewId: number): Observable<void> {
     this.loadingSubject.next(true);
 
     return this.api
-      .delete<void>(`movies/${movieId}/reviews/${reviewId}/`)
+      .delete<void>(`reviews/${reviewId}/`)
       .pipe(
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))

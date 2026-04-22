@@ -32,6 +32,10 @@ export class WatchlistService {
   private readonly watchlistSubject = new BehaviorSubject<WatchlistMovie[]>([]);
   readonly watchlist$ = this.watchlistSubject.asObservable();
 
+  get currentWatchlist(): WatchlistMovie[] {
+    return this.watchlistSubject.value;
+  }
+
   getWatchlist(params?: {
     sort?: string;
     search?: string;
@@ -49,12 +53,30 @@ export class WatchlistService {
       );
   }
 
-  addToWatchlist(movieId: number): Observable<{ id: number; movie_id: number; added_at: string }> {
+  addToWatchlist(movieId: number): Observable<{ id: number; movie: number; added_at: string }> {
     this.loadingSubject.next(true);
 
     return this.api
-      .post<{ id: number; movie_id: number; added_at: string }>('watchlist/', { movie_id: movieId })
+      .post<{ id: number; movie: number; added_at: string }>('watchlist/', {
+        movie: movieId
+      })
       .pipe(
+        tap((response) => {
+          const exists = this.watchlistSubject.value.some((movie) => movie.id === response.movie);
+
+          if (!exists) {
+            this.watchlistSubject.next([
+              ...this.watchlistSubject.value,
+              {
+                id: response.movie,
+                title: '',
+                rating: 0,
+                poster_url: null,
+                added_at: response.added_at
+              }
+            ]);
+          }
+        }),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );
@@ -66,6 +88,11 @@ export class WatchlistService {
     return this.api
       .delete<void>(`watchlist/${movieId}/`)
       .pipe(
+        tap(() => {
+          this.watchlistSubject.next(
+            this.watchlistSubject.value.filter((movie) => movie.id !== movieId)
+          );
+        }),
         catchError((error) => this.errorHandler.handleError(error)),
         finalize(() => this.loadingSubject.next(false))
       );

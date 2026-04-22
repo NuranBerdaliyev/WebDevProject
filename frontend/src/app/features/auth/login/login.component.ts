@@ -41,7 +41,7 @@ export class LoginComponent {
     this.authService.login(credentials).subscribe({
       next: () => {
         this.notificationService.success('Login successful');
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/';
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/movies';
         this.router.navigateByUrl(returnUrl);
       },
       error: (error: Error) => {

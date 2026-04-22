@@ -1,11 +1,14 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, AllowAny
 from rest_framework.filters import SearchFilter, OrderingFilter
 from .models import Movie, Genre, Review, WatchlistItem
-from .serializers import MovieSerializer, GenreSerializer, ReviewSerializer, WatchlistItemSerializer
+from .serializers import MovieSerializer, GenreSerializer, ReviewSerializer, WatchlistItemSerializer, CustomTokenObtainPairSerializer, RegisterSerializer
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status, serializers
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenBlacklistView
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -20,8 +23,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filter_backends = [OrderingFilter]
     ordering_fields = ['rating', 'created_at']
     ordering = ['-created_at']
-
-    def get_queryset(self):
+    '''
+     def get_queryset(self):
         queryset = Review.objects.all()
         movie_id = self.request.query_params.get('movie')
 
@@ -29,7 +32,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(movie_id=movie_id)
 
         return queryset.order_by('-created_at')
-
+    '''
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
@@ -78,3 +81,43 @@ class WatchlistViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+class TokenBlacklistView(TokenBlacklistView):
+    pass
+
+
+class LoginView(TokenObtainPairView):
+    permission_classes = [AllowAny]
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(
+            {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+
+class LogoutView(TokenBlacklistView):
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
+        return response

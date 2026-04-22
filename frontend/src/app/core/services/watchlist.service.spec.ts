@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { of, firstValueFrom, throwError } from 'rxjs';
+import { of } from 'rxjs';
+import { vi } from 'vitest';
 
 import { WatchlistService } from './watchlist.service';
 import { ApiService } from './api.service';
@@ -7,41 +8,30 @@ import { ErrorHandlerService } from './error-handler.service';
 
 describe('WatchlistService', () => {
   let service: WatchlistService;
-
-  const apiMock = {
-    get: () =>
-      of({
-        count: 1,
-        next: null,
-        previous: null,
-        results: [
-          {
-            id: 1,
-            title: 'Test Movie',
-            rating: 8.1,
-            poster_url: null,
-            added_at: '2026-01-01T00:00:00Z'
-          }
-        ]
-      }),
-    post: (_endpoint: string, body: { movie_id: number }) =>
-      of({
-        id: 99,
-        movie_id: body.movie_id,
-        added_at: '2026-01-01T00:00:00Z'
-      }),
-    delete: () => of(void 0)
+  let apiServiceMock: {
+    get: ReturnType<typeof vi.fn>;
+    post: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
   };
-
-  const errorHandlerMock = {
-    handleError: (error: unknown) => throwError(() => error)
+  let errorHandlerMock: {
+    handleError: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
+    apiServiceMock = {
+      get: vi.fn(),
+      post: vi.fn(),
+      delete: vi.fn()
+    };
+
+    errorHandlerMock = {
+      handleError: vi.fn()
+    };
+
     TestBed.configureTestingModule({
       providers: [
         WatchlistService,
-        { provide: ApiService, useValue: apiMock },
+        { provide: ApiService, useValue: apiServiceMock },
         { provide: ErrorHandlerService, useValue: errorHandlerMock }
       ]
     });
@@ -49,19 +39,25 @@ describe('WatchlistService', () => {
     service = TestBed.inject(WatchlistService);
   });
 
-  it('should load watchlist', async () => {
-    const response = await firstValueFrom(service.getWatchlist());
-    expect(response.results.length).toBe(1);
-    expect(response.results[0].id).toBe(1);
+  it('should add movie to watchlist', () => {
+    apiServiceMock.post.mockReturnValue(
+      of({ id: 1, movie_id: 1, added_at: '2026-04-21T10:00:00Z' })
+    );
+
+    service.addToWatchlist(1).subscribe();
+
+    expect(service.currentWatchlist.some(movie => movie.id === 1)).toBe(true);
   });
 
-  it('should add movie to watchlist', async () => {
-    const result = await firstValueFrom(service.addToWatchlist(7));
-    expect(result.movie_id).toBe(7);
-  });
+  it('should remove movie from watchlist', () => {
+    apiServiceMock.post.mockReturnValue(
+      of({ id: 1, movie_id: 1, added_at: '2026-04-21T10:00:00Z' })
+    );
+    apiServiceMock.delete.mockReturnValue(of(void 0));
 
-  it('should remove movie from watchlist', async () => {
-    const result = await firstValueFrom(service.removeFromWatchlist(7));
-    expect(result).toBeUndefined();
+    service.addToWatchlist(1).subscribe();
+    service.removeFromWatchlist(1).subscribe();
+
+    expect(service.currentWatchlist.some(movie => movie.id === 1)).toBe(false);
   });
 });

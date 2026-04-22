@@ -25,7 +25,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'login',
+    redirectTo: 'movies',
     pathMatch: 'full'
   }
 ];
