@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthResponse } from '../models/auth-response.model';
 import { ErrorHandlerService } from './error-handler.service';
+import { UserStateService } from './user-state.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,7 @@ import { ErrorHandlerService } from './error-handler.service';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly errorHandler = inject(ErrorHandlerService);
+  private readonly userState = inject(UserStateService);
 
   private readonly apiUrl = `${environment.apiUrl}/auth`;
   private readonly tokenKey = 'access_token';
@@ -28,20 +30,9 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login/`, credentials).pipe(
       tap((response) => {
         localStorage.setItem(this.tokenKey, response.access);
+        localStorage.setItem('refresh_token', response.refresh);
         this.isAuthenticatedSubject.next(true);
-      }),
-      catchError((error) => this.errorHandler.handleError(error)),
-      finalize(() => this.loadingSubject.next(false))
-    );
-  }
-
-  register(userData: { username: string; email?: string; password: string; first_name?: string; last_name?: string }): Observable<AuthResponse> {
-    this.loadingSubject.next(true);
-
-    return this.http.post<AuthResponse>(`${this.apiUrl}/register/`, userData).pipe(
-      tap((response) => {
-        localStorage.setItem(this.tokenKey, response.access);
-        this.isAuthenticatedSubject.next(true);
+        this.userState.setUser(response.user);
       }),
       catchError((error) => this.errorHandler.handleError(error)),
       finalize(() => this.loadingSubject.next(false))
@@ -50,7 +41,9 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem('refresh_token');
     this.isAuthenticatedSubject.next(false);
+    this.userState.clearUser();
   }
 
   getToken(): string | null {
@@ -59,6 +52,15 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return this.hasToken();
+  }
+
+  register(data: { username: string; email: string; password: string }): Observable<unknown> {
+    this.loadingSubject.next(true);
+  
+    return this.http.post(`${this.apiUrl}/register/`, data).pipe(
+      catchError((error) => this.errorHandler.handleError(error)),
+      finalize(() => this.loadingSubject.next(false))
+    );
   }
 
   private hasToken(): boolean {

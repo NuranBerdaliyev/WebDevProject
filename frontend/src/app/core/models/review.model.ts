@@ -1,12 +1,27 @@
+export interface ReviewUser {
+  id: number;
+  username: string;
+  avatar_url: string | null;
+}
+
 export interface Review {
-    id: number;
-    movie: number;
-    user: number;
-    rating: number;
-    text: string;
-    created_at: string;
-    // Optional fields from backend
-    username?: string;
-    user_name?: string;
-    stars?: number;
-  }
+  id: number;
+  movie_id: number;
+  user: ReviewUser;
+  rating: number;
+  title: string;
+  text: string;
+  helpful_count: number;
+  user_helpful: boolean;
+  created_at: string;
+  updated_at: string;
+
+  username?: string;
+  stars?: number;
+}
+
+export interface CreateReviewData {
+  rating: number;
+  title: string;
+  text?: string;
+}

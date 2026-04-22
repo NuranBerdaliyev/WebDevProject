@@ -1,0 +1,8 @@
+@if (notificationService.notification$ | async; as notification) {
+    <div class="toast" [class.success]="notification.type === 'success'"
+         [class.error]="notification.type === 'error'"
+         [class.info]="notification.type === 'info'"
+         [class.warning]="notification.type === 'warning'">
+      {{ notification.message }}
+    </div>
+  }

@@ -10,7 +10,9 @@ export class ErrorHandlerService {
     let message = 'Something went wrong. Please try again later.';
 
     if (error.status === 0) {
-      message = 'Cannot connect to the server. Please check your connection.';
+      message = 'Cannot connect to the server. Please check your internet or backend connection.';
+    } else if (error.error?.error?.message) {
+      message = error.error.error.message;
     } else if (error.status === 400) {
       message = 'Invalid request. Please check the entered data.';
     } else if (error.status === 401) {
