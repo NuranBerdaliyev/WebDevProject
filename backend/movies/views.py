@@ -23,8 +23,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filter_backends = [OrderingFilter]
     ordering_fields = ['rating', 'created_at']
     ordering = ['-created_at']
-
-    def get_queryset(self):
+    '''
+     def get_queryset(self):
         queryset = Review.objects.all()
         movie_id = self.request.query_params.get('movie')
 
@@ -32,7 +32,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(movie_id=movie_id)
 
         return queryset.order_by('-created_at')
-
+    '''
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 

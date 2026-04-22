@@ -53,20 +53,22 @@ export class WatchlistService {
       );
   }
 
-  addToWatchlist(movieId: number): Observable<{ id: number; movie_id: number; added_at: string }> {
+  addToWatchlist(movieId: number): Observable<{ id: number; movie: number; added_at: string }> {
     this.loadingSubject.next(true);
 
     return this.api
-      .post<{ id: number; movie_id: number; added_at: string }>('watchlist/', { movie_id: movieId })
+      .post<{ id: number; movie: number; added_at: string }>('watchlist/', {
+        movie: movieId
+      })
       .pipe(
         tap((response) => {
-          const exists = this.watchlistSubject.value.some((movie) => movie.id === response.movie_id);
+          const exists = this.watchlistSubject.value.some((movie) => movie.id === response.movie);
 
           if (!exists) {
             this.watchlistSubject.next([
               ...this.watchlistSubject.value,
               {
-                id: response.movie_id,
+                id: response.movie,
                 title: '',
                 rating: 0,
                 poster_url: null,
