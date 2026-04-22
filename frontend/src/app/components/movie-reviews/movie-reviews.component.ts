@@ -231,6 +231,68 @@ interface ReviewFormData {
       gap: 10px;
     }
 
+    .btn-submit, .btn-cancel {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-submit {
+      background: #e50914;
+      color: white;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: #f40612;
+    }
+
+    .btn-submit:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .btn-cancel {
+      background: #444;
+      color: white;
+    }
+
+    .btn-cancel:hover {
+      background: #555;
+    }
+
+    /* Login Prompt */
+    .login-prompt {
+      padding: 20px;
+      text-align: center;
+      color: #a3a3a3;
+      background: #262626;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* Reviews List */
+    .reviews-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .no-reviews {
+      padding: 30px;
+      text-align: center;
+      color: #a3a3a3;
+      background: #262626;
+      border-radius: 8px;
+    }
+
+    .review-item {
+      background: #262626;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
     .review-header {
       display: flex;
       justify-content: space-between;
@@ -249,14 +311,18 @@ interface ReviewFormData {
       color: #e5e5e5;
     }
 
-    .review-title {
-      margin: 8px 0;
-      color: #fff;
+    .review-rating {
+      display: flex;
+      gap: 2px;
     }
 
-    .rating-badge {
+    .star {
+      color: #333;
+      font-size: 18px;
+    }
+
+    .star.filled {
       color: #ffd700;
-      font-weight: 600;
     }
 
     .review-date {

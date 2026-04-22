@@ -1,11 +1,16 @@
 import { Injectable, inject } from '@angular/core';
+<<<<<<< HEAD
 import { BehaviorSubject, Observable, tap, catchError, finalize, map } from 'rxjs';
+=======
+import { BehaviorSubject, Observable, tap, catchError, finalize } from 'rxjs';
+>>>>>>> origin
 import { HttpClient } from '@angular/common/http';
 
 import { environment } from '../../../environments/environment';
 import { AuthResponse } from '../models/auth-response.model';
 import { ErrorHandlerService } from './error-handler.service';
 import { UserStateService } from './user-state.service';
+<<<<<<< HEAD
 import { User } from '../models/user.model';
 
 type AuthApiResponse = {
@@ -13,6 +18,8 @@ type AuthApiResponse = {
   refresh: string;
   user?: User;
 };
+=======
+>>>>>>> origin
 
 @Injectable({
   providedIn: 'root'
@@ -52,7 +59,6 @@ export class AuthService {
         localStorage.setItem(this.tokenKey, response.access);
         localStorage.setItem('refresh_token', response.refresh);
         this.isAuthenticatedSubject.next(true);
-
         this.userState.setUser(response.user);
       }),
       catchError((error) => this.errorHandler.handleError(error)),
@@ -86,7 +92,6 @@ export class AuthService {
 
   register(data: { username: string; email: string; password: string }): Observable<unknown> {
     this.loadingSubject.next(true);
-
     return this.http.post(`${this.apiUrl}/register/`, data).pipe(
       catchError((error) => this.errorHandler.handleError(error)),
       finalize(() => this.loadingSubject.next(false))
