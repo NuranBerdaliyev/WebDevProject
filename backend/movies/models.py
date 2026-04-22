@@ -12,11 +12,17 @@ class Movie(models.Model):
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
     release_date = models.DateField()
     poster_url = models.URLField()
+    backdrop_url = models.URLField(null=True, blank=True)  # Добавить
+    director = models.CharField(max_length=200, null=True, blank=True)  # Добавить
+    cast = models.TextField(null=True, blank=True)  # Добавить (JSON или текст)
+    duration_minutes = models.IntegerField(null=True, blank=True)  # Добавить
     rating = models.FloatField(
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         null=True,
         blank=True
     )
+    created_at = models.DateTimeField(auto_now_add=True, null=True)  # Добавить
+    updated_at = models.DateTimeField(auto_now=True, null=True)  # Добавить
 
 class Review(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)

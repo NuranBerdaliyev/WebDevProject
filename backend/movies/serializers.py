@@ -7,10 +7,27 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description']
 
 class MovieSerializer(serializers.ModelSerializer):
+    genre = GenreSerializer(read_only=True)  # Измените на nested serializer
+    reviews_count = serializers.SerializerMethodField()
+    is_in_watchlist = serializers.SerializerMethodField()
+
     class Meta:
         model = Movie
-        fields = ['id', 'title', 'description', 'genre', 'release_date', 'rating', 'poster_url']
+        fields = [
+            'id', 'title', 'description', 'genre', 'release_date', 
+            'rating', 'poster_url', 'backdrop_url', 'director', 'cast',
+            'duration_minutes', 'reviews_count', 'is_in_watchlist',
+            'created_at', 'updated_at'
+        ]
 
+    def get_reviews_count(self, obj):
+        return obj.review_set.count()
+
+    def get_is_in_watchlist(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return WatchlistItem.objects.filter(user=request.user, movie=obj).exists()
+        return False
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)  # Show username

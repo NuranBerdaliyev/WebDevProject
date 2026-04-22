@@ -6,6 +6,7 @@ from .serializers import MovieSerializer, GenreSerializer, ReviewSerializer, Wat
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status, serializers
+from rest_framework.decorators import action
 
 
 class GenreViewSet(viewsets.ModelViewSet):
@@ -78,3 +79,12 @@ class WatchlistViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['delete'], url_path='remove/(?P<movie_id>\d+)')
+    def remove_by_movie(self, request, movie_id=None):
+        try:
+            item = WatchlistItem.objects.get(user=request.user, movie_id=movie_id)
+            item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except WatchlistItem.DoesNotExist:
+            return Response({'error': 'Not in watchlist'}, status=status.HTTP_404_NOT_FOUND)
