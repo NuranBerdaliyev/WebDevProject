@@ -20,7 +20,6 @@ export class MovieService {
 
   private cacheLoaded = false;
 
-  // 🔥 Главный метод
   getMovies(
     forceRefresh: boolean = false,
     params?: {
