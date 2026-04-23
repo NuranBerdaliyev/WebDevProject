@@ -1,13 +1,23 @@
+<<<<<<< HEAD
 # Movie Catalog System - API Contract
 
 **Версия:** 1.1  
 **Дата:** 2026-04-21  
 **Базовый URL:** http://localhost:8000/api  
+=======
+
+# Movie Catalog System - API Contract
+
+**Версия:** 1.0  
+**Дата:** 2026-04-20  
+**Базовый URL:** `http://localhost:8000/api` (dev) / `https://api.example.com/api` (prod)  
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 **Формат:** JSON  
 **Аутентификация:** JWT Bearer Token
 
 ---
 
+<<<<<<< HEAD
 ## Содержание
 
 1. Общие правила
@@ -55,6 +65,83 @@ Request:
 
 Response (200 OK):
 ~~~json
+=======
+## 📋 Содержание
+
+1. [Общие правила](#общие-правила)
+2. [Аутентификация](#аутентификация)
+3. [Movies (Фильмы)](#movies-фильмы)
+4. [Reviews (Рецензии)](#reviews-рецензии)
+5. [Genres (Жанры)](#genres-жанры)
+6. [Watchlist (Мой список)](#watchlist-мой-список)
+7. [User Profile](#user-profile)
+8. [Обработка ошибок](#обработка-ошибок)
+
+---
+
+## 🔧 Общие правила
+
+### Форматы данных
+
+- **Даты:** ISO 8601 (`2026-04-20T15:30:00Z`)
+- **Таймауты запросов:** 30 сек
+- **Лимит размера файла:** 5MB (для изображений)
+
+### Коды ответов
+
+| Код | Значение | Описание |
+|-----|----------|---------|
+| 200 | OK | Успешный запрос |
+| 201 | Created | Ресурс создан |
+| 204 | No Content | Успешно удалено/обновлено (без тела ответа) |
+| 400 | Bad Request | Некорректные данные |
+| 401 | Unauthorized | Требуется авторизация |
+| 403 | Forbidden | Доступ запрещен |
+| 404 | Not Found | Ресурс не найден |
+| 409 | Conflict | Конфликт данных |
+| 500 | Server Error | Ошибка сервера |
+
+### Стандартный формат ошибки
+
+```json
+{
+  "error": {
+    "code": "INVALID_INPUT",
+    "message": "Описание ошибки",
+    "details": {
+      "field_name": ["Конкретная ошибка поля"]
+    }
+  }
+}
+```
+
+### Headers
+
+**Обязательные для авторизованных запросов:**
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+---
+
+## 🔐 Аутентификация
+
+### 1. Вход (Login)
+
+**Endpoint:** `POST /auth/login/`
+
+**Request:**
+```json
+{
+  "username": "user@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response (200 OK):**
+```json
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 {
   "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
   "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
@@ -76,7 +163,11 @@ Response (200 OK):
 
 ### 2. Обновление токена (Refresh Token)
 
+<<<<<<< HEAD
 **Endpoint:** `POST /api/token/refresh/`
+=======
+**Endpoint:** `POST /auth/token/refresh/`
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 
 **Request:**
 ```json
@@ -99,7 +190,11 @@ Response (200 OK):
 
 ### 3. Выход (Logout)
 
+<<<<<<< HEAD
 **Endpoint:** `POST /api/logout/`
+=======
+**Endpoint:** `POST /auth/logout/`
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 
 **Request:**
 ```json
@@ -108,6 +203,7 @@ Response (200 OK):
 }
 ```
 
+<<<<<<< HEAD
 **Response (200 OK):**
 ```json
 {
@@ -118,6 +214,15 @@ Response (200 OK):
 ---
 
 ## 🎬 Movies
+=======
+**Response (204 No Content)**
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+---
+
+## 🎬 Movies (Фильмы)
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 
 ### 1. Получить список фильмов
 
@@ -306,6 +411,7 @@ Response (200 OK):
 
 ---
 
+<<<<<<< HEAD
 ## 💬 Reviews
 
 ### 1. Получить рецензии
@@ -339,13 +445,68 @@ Response (200 OK):
 **Endpoint:** POST /api/reviews/
 
 **Headers:** Authorization: Bearer <access_token>
+=======
+## 💬 Reviews (Рецензии)
+
+### 1. Получить рецензии фильма
+
+**Endpoint:** `GET /movies/{movie_id}/reviews/`
+
+**Query Parameters:**
+```
+?sort=-rating              # Сортировка (-rating, -created_at, rating)
+&page=1
+&limit=10
+```
+
+**Response (200 OK):**
+```json
+{
+  "count": 42,
+  "next": "http://localhost:8000/api/movies/1/reviews/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "movie_id": 1,
+      "user": {
+        "id": 1,
+        "username": "john_doe",
+        "avatar_url": "https://api.example.com/media/avatars/john.jpg"
+      },
+      "rating": 9,
+      "title": "Masterpiece!",
+      "text": "One of the best sci-fi movies ever made...",
+      "helpful_count": 15,
+      "user_helpful": false,
+      "created_at": "2026-03-20T10:30:00Z",
+      "updated_at": "2026-03-20T10:30:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 2. Создать рецензию
+
+**Endpoint:** `POST /movies/{movie_id}/reviews/`
+
+**Headers:** `Authorization: Bearer <access_token>`
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 
 **Request:**
 ```json
 {
+<<<<<<< HEAD
   "movie": 1,
   "rating": 9,
   "text": "Great movie"
+=======
+  "rating": 9,
+  "title": "Masterpiece!",
+  "text": "One of the best sci-fi movies ever made. The concept is brilliant..."
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 }
 ```
 
@@ -358,6 +519,7 @@ Response (200 OK):
 ```json
 {
   "id": 43,
+<<<<<<< HEAD
   "movie": 1,
   "user": "current_user",
   "rating": 9,
@@ -398,6 +560,93 @@ Response (200 OK):
 ---
 
 ## 🏷️ Genres
+=======
+  "movie_id": 1,
+  "user": {
+    "id": 2,
+    "username": "current_user",
+    "avatar_url": "https://api.example.com/media/avatars/user.jpg"
+  },
+  "rating": 9,
+  "title": "Masterpiece!",
+  "text": "One of the best sci-fi movies ever made...",
+  "helpful_count": 0,
+  "user_helpful": false,
+  "created_at": "2026-04-20T15:30:00Z",
+  "updated_at": "2026-04-20T15:30:00Z"
+}
+```
+
+**Errors:**
+- `400 Bad Request` - Некорректные данные
+- `401 Unauthorized` - Требуется авторизация
+- `404 Not Found` - Фильм не найден
+- `409 Conflict` - Пользователь уже оставил рецензию на этот фильм
+
+---
+
+### 3. Обновить рецензию
+
+**Endpoint:** `PUT /movies/{movie_id}/reviews/{review_id}/`
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request:** (те же поля, что при создании)
+```json
+{
+  "rating": 8,
+  "title": "Great movie",
+  "text": "Updated review text..."
+}
+```
+
+**Response (200 OK):** (возвращает обновленный объект)
+
+**Errors:**
+- `403 Forbidden` - Можно редактировать только свои рецензии
+- `404 Not Found` - Рецензия не найдена
+
+---
+
+### 4. Удалить рецензию
+
+**Endpoint:** `DELETE /movies/{movie_id}/reviews/{review_id}/`
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response (204 No Content)**
+
+**Errors:**
+- `403 Forbidden` - Можно удалять только свои рецензии
+- `404 Not Found` - Рецензия не найдена
+
+---
+
+### 5. Отметить рецензию как полезную
+
+**Endpoint:** `POST /movies/{movie_id}/reviews/{review_id}/helpful/`
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request:**
+```json
+{
+  "helpful": true
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "helpful_count": 16,
+  "user_helpful": true
+}
+```
+
+---
+
+## 🏷️ Genres (Жанры)
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 
 ### 1. Получить все жанры
 
@@ -431,6 +680,7 @@ Response (200 OK):
 
 ---
 
+<<<<<<< HEAD
 ## 📋 Watchlist
 
 ### 1. Получить мой список
@@ -504,6 +754,83 @@ Response (200 OK):
 
 **Response (204 No Content)**
 
+=======
+## 📋 Watchlist (Мой список)
+
+### 1. Получить мой список
+
+**Endpoint:** `GET /watchlist/`
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Query Parameters:**
+```
+?sort=-added_at             # Сортировка (-added_at, title)
+&search=Inception           # Поиск
+&page=1
+&limit=20
+```
+
+**Response (200 OK):**
+```json
+{
+  "count": 5,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "title": "Inception",
+      "rating": 8.8,
+      "poster_url": "https://api.example.com/media/posters/inception.jpg",
+      "added_at": "2026-04-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### 2. Добавить фильм в мой список
+
+**Endpoint:** `POST /watchlist/`
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Request:**
+```json
+{
+  "movie_id": 1
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": 1,
+  "movie_id": 1,
+  "added_at": "2026-04-20T15:30:00Z"
+}
+```
+
+**Errors:**
+- `400 Bad Request` - Фильм уже в списке
+- `404 Not Found` - Фильм не найден
+
+---
+
+### 3. Удалить фильм из моего списка
+
+**Endpoint:** `DELETE /watchlist/{movie_id}/`
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response (204 No Content)**
+
+**Errors:**
+- `404 Not Found` - Фильм не в списке
+
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 ---
 
 ## 👤 User Profile
@@ -641,6 +968,77 @@ Response (200 OK):
 
 ---
 
+<<<<<<< HEAD
+=======
+## 📝 Примеры интеграции (Frontend)
+
+### Angular HttpClient Service
+
+```typescript
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { BehaviorSubject, Observable } from 'rxjs';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class MovieService {
+  private apiUrl = 'http://localhost:8000/api';
+  private accessToken = localStorage.getItem('access_token');
+
+  constructor(private http: HttpClient) {}
+
+  // Movies
+  getMovies(params?: any): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        httpParams = httpParams.set(key, params[key]);
+      });
+    }
+    return this.http.get(`${this.apiUrl}/movies/`, { params: httpParams });
+  }
+
+  getMovieDetails(id: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/movies/${id}/`);
+  }
+
+  // Reviews
+  getReviews(movieId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/movies/${movieId}/reviews/`);
+  }
+
+  createReview(movieId: number, data: any): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/movies/${movieId}/reviews/`,
+      data,
+      { headers: { Authorization: `Bearer ${this.accessToken}` } }
+    );
+  }
+
+  // Watchlist
+  getWatchlist(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/watchlist/`, {
+      headers: { Authorization: `Bearer ${this.accessToken}` }
+    });
+  }
+
+  addToWatchlist(movieId: number): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/watchlist/`,
+      { movie_id: movieId },
+      { headers: { Authorization: `Bearer ${this.accessToken}` } }
+    );
+  }
+
+  removeFromWatchlist(movieId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/watchlist/${movieId}/`, {
+      headers: { Authorization: `Bearer ${this.accessToken}` }
+    });
+  }
+}
+```
+>>>>>>> 625e08b1 (docs: add api contract to project root)
 
 ---
 
@@ -652,5 +1050,13 @@ Response (200 OK):
 
 ---
 
+<<<<<<< HEAD
 **Версия контракта:** 1.1  
 **Последнее обновление:** 2026-04-21
+=======
+**Версия контракта:** 1.0  
+**Последнее обновление:** 2026-04-20
+```
+
+---
+>>>>>>> 625e08b1 (docs: add api contract to project root)
