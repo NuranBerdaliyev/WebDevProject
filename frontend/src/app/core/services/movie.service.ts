@@ -46,7 +46,6 @@ export class MovieService {
       .get<PaginatedResponse<Movie>>('movies/', params)
       .pipe(
         tap((response) => {
-          // сохраняем только если это обычный запрос без фильтров
           if (!params) {
             this.moviesSubject.next(response.results);
             this.cacheLoaded = true;
