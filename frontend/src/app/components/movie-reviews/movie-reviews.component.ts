@@ -99,7 +99,7 @@ interface ReviewFormData {
           <div *ngIf="editingReview?.id !== review.id" class="review-content">
             <div class="review-header">
               <div class="review-user">
-                <span class="username">{{ review.user?.username || 'Anonymous' }}</span>
+                <span class="username">{{ review.user.username || 'Anonymous' }}</span>
 
                 <div class="review-rating">
                   <span class="rating-badge">{{ review.rating }}/10</span>

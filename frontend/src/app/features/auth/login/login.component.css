@@ -26,12 +26,7 @@ button {
   color: #c62828;
   font-size: 12px;
 }
-
-.error-message {
+.error-text {
   color: #c62828;
-  margin-bottom: 12px;
-<<<<<<< HEAD
+  font-size: 12px;
 }
-=======
-}
->>>>>>> 33796647 (feat: finalize frontend with api service, state management, watchlist, rating, notifications and tests)
