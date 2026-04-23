@@ -1,18 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-<<<<<<< HEAD
 import { of, firstValueFrom, throwError } from 'rxjs';
 
 import { WatchlistService } from './watchlist.service';
 import { ApiService } from './api.service';
 import { ErrorHandlerService } from './error-handler.service';
-=======
-import { WatchlistService } from './watchlist.service';
->>>>>>> 33796647 (feat: finalize frontend with api service, state management, watchlist, rating, notifications and tests)
 
 describe('WatchlistService', () => {
   let service: WatchlistService;
 
-<<<<<<< HEAD
   const apiMock = {
     get: () =>
       of({
@@ -68,21 +63,5 @@ describe('WatchlistService', () => {
   it('should remove movie from watchlist', async () => {
     const result = await firstValueFrom(service.removeFromWatchlist(7));
     expect(result).toBeUndefined();
-=======
-  beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(WatchlistService);
-  });
-
-  it('should add movie to watchlist', () => {
-    service.addToWatchlist(1);
-    expect(service.getWatchlist()).toContain(1);
-  });
-
-  it('should remove movie from watchlist', () => {
-    service.addToWatchlist(2);
-    service.removeFromWatchlist(2);
-    expect(service.getWatchlist()).not.toContain(2);
->>>>>>> 33796647 (feat: finalize frontend with api service, state management, watchlist, rating, notifications and tests)
   });
 });
