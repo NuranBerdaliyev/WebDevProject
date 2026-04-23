@@ -27,8 +27,4 @@ export interface PaginatedResponse<T> {
   next: string | null;
   previous: string | null;
   results: T[];
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 690ed985 (refactor: update models according to API contract)
