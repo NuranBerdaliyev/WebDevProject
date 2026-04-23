@@ -3,6 +3,7 @@ import { RouterOutlet } from '@angular/router';
 
 import { ToastComponent } from './shared/toast/toast.component';
 
+
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, ToastComponent],
